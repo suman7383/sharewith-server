@@ -1,0 +1,19 @@
+{
+  "name": "share-with-server",
+  "version": "1.0.0",
+  "description": "shareWith server",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/suman7383/sharewith-server.git"
+  },
+  "author": "sumanmukherjee2001@gmail.com",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/suman7383/sharewith-server/issues"
+  },
+  "homepage": "https://github.com/suman7383/sharewith-server#readme"
+}
