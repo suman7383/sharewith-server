@@ -8,7 +8,7 @@ export type TProjectionFields<T> = {
 export interface IMongoUserInput {
     name: string
     email: string
-    password: string
+    password?: string
     avatar?: string
     isSocialSignUp?: boolean
     socialId?: string

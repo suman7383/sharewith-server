@@ -1,53 +1,76 @@
-import passport from 'passport'
-import { IVerifyOptions, Strategy as LocalStrategy } from 'passport-local'
+import {
+    Strategy as GoogleStrategy,
+    StrategyOptions,
+    VerifyCallback
+} from 'passport-google-oauth20'
+import { Profile } from 'passport'
+import config from '../config/config'
 import userService from '../services/user.service'
+import logger from '../utils/logger'
+
+const options: StrategyOptions = {
+    clientID: config.GOOGLE_CLIENT_ID,
+    clientSecret: config.GOOGLE_CLIENT_SECRET,
+    callbackURL: config.GOOGLE_CALLBACK_URL
+}
 
 const asyncHandler =
     (
         fn: (
-            email: string,
-            password: string,
-            done: (
-                error: unknown,
-                user?: Express.User,
-                options?: IVerifyOptions
-            ) => void
-        ) => unknown
+            accessToken: string,
+            refreshToken: string,
+            profile: Profile,
+            done: VerifyCallback
+        ) => Promise<void>
     ) =>
     (
-        email: string,
-        password: string,
-        done: (
-            error: unknown,
-            user?: Express.User,
-            options?: IVerifyOptions
-        ) => void
+        accessToken: string,
+        refreshToken: string,
+        profile: Profile,
+        done: VerifyCallback
     ) => {
-        Promise.resolve(fn(email, password, done)).catch((err) => done(err))
+        Promise.resolve(fn(accessToken, refreshToken, profile, done)).catch(
+            (error: unknown) => {
+                logger.error('Error in google oauth2 async handler:', {
+                    meta: {
+                        err: error
+                    }
+                })
+                done(error)
+            }
+        )
     }
 
-//for login using email and password
-passport.use(
-    new LocalStrategy(
-        { usernameField: 'email', passwordField: 'password' },
-        asyncHandler(async (email, password, done) => {
-            const user = await userService.findUser({
-                filter: {
-                    email
+export const googlePassportStrategy = new GoogleStrategy(
+    options,
+    asyncHandler(async (accessToken, refreshToken, profile, done) => {
+        try {
+            logger.info('User profile', {
+                meta: {
+                    data: profile
                 }
             })
-            if (!user) {
-                return done(null, false, {
-                    message: 'Incorrect email or password'
-                })
+            const user = await userService.findUser({
+                filter: { socialId: profile.id }
+            })
+
+            if (user) {
+                done(null, user)
+                return
             }
 
-            const isMatch = await user.comparePassword(password)
-            if (isMatch) {
-                return done(null, user)
-            } else {
-                return done(null, false, { message: 'Incorrect password.' })
-            }
-        })
-    )
+            // If no user is found, create a new user
+            const newUser = await userService.createUser({
+                name: profile.displayName,
+                email: profile.emails![0].value,
+                socialId: profile.id,
+                isSocialSignUp: true,
+                socialProvider: 'google'
+            })
+
+            done(null, newUser)
+        } catch (err) {
+            done(err)
+        }
+    })
 )

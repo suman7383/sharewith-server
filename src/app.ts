@@ -13,10 +13,15 @@ import {
 } from './utils/errorHandling/errorResponse'
 import { sendErrorResponse } from './utils/errorHandling'
 import logger from './utils/logger'
+import cookieParser from 'cookie-parser'
+import config from './config/config'
+import passport from 'passport'
+import { googlePassportStrategy } from './middleware/auth'
 
 const app = express()
 
 //< ---------- Middlewares ------------- >
+app.use(cookieParser())
 app.use(morgan('short'))
 app.use(helmet())
 app.use(
@@ -25,7 +30,12 @@ app.use(
     })
 )
 
-app.use(cors())
+app.use(
+    cors({
+        credentials: true,
+        origin: config.FRONTEND_URL
+    })
+)
 app.use(
     express.urlencoded({
         limit: '1mb',
@@ -34,6 +44,9 @@ app.use(
 )
 
 app.use(mongooseSanitize({ replaceWith: '_' }))
+
+app.use(passport.initialize())
+passport.use('google', googlePassportStrategy)
 
 //connections
 connectDB()

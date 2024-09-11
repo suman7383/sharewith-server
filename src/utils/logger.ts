@@ -41,7 +41,9 @@ const consoleLogFormat = format.printf((info) => {
 
 const consoleTransport = (): Array<ConsoleTransportInstance> => {
     //print to console only in development
-    if (config.ENV === EApplicationEnvironment.DEV) {
+    if (
+        (config.ENV as EApplicationEnvironment) === EApplicationEnvironment.DEV
+    ) {
         return [
             new transports.Console({
                 level: 'info',

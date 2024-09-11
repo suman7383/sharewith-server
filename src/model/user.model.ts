@@ -2,6 +2,7 @@ import mongoose, { Document } from 'mongoose'
 import bcrypt from 'bcrypt'
 import { authError } from '../utils/errorHandling/errorResponse'
 import { IMongoUserInput } from '../types'
+import { hashPassword } from '../utils/hash'
 
 export interface IUserDoc extends IMongoUserInput, Document {
     comparePassword: (password: string) => Promise<boolean>
@@ -11,10 +12,14 @@ const userSchema = new mongoose.Schema<IUserDoc>(
     {
         name: {
             type: String,
+            lowercase: true,
             required: true
         },
         email: {
             type: String,
+            unique: true,
+            index: true,
+            lowercase: true,
             required: true
         },
         password: {
@@ -47,6 +52,13 @@ const userSchema = new mongoose.Schema<IUserDoc>(
         timestamps: true
     }
 )
+
+userSchema.pre('save', function (next) {
+    if (this.isModified('password') && this.password) {
+        this.password = hashPassword(this.password)
+    }
+    next()
+})
 
 userSchema.methods.comparePassword = async function (password: string) {
     if (this.isSocialSignUp && !this.password) {
